@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+	<!-- 数据库连接池 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+		<property name="url" value="jdbc:mysql://localhost:3306/demo?characterEncoding=utf8"></property>
+		<property name="username" value="root"></property>
+		<property name="password" value="woniu"></property>
+	</bean>
+	<!-- sessionFactory-->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<!--注入数据源 （连接池对象）-->
+		<property name="dataSource" ref="dataSource"></property>
+		<!--hibernate配置-->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5InnoDBDialect</prop>
+			</props>
+		</property>
+		<!-- hibernate映射配置 -->
+		<property name="mappingResources">
+			<list>
+				<value>com/woniu/pojo/Dept.hbm.xml</value>
+			</list>
+		</property>
+	</bean>
+	<!-- dao -->
+	<bean id="deptDAO" class="com.woniu.dao.impl.DeptDAOImpl">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+	<!-- service -->
+	<bean id="deptService" class="com.woniu.service.impl.DeptServiceImpl">
+		<property name="deptDAO" ref="deptDAO"></property>
+	</bean>
+	<!-- action -->
+	<bean id="deptAction" class="com.woniu.action.DeptAction">
+		<property name="deptService" ref="deptService"></property>
+	</bean> 
+	<!-- 事务管理 -->
+	<!-- 配置事务管理器 -->
+	<bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!-- 配置事务通知 -->
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="find*" propagation="SUPPORTS" rollback-for="Exception"/>
+			<tx:method name="*" propagation="REQUIRED" read-only="false"/>
+		</tx:attributes>
+	</tx:advice>
+	<!-- 在切入点中加入事务 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.woniu.service.*.*(..))" id="txcut"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="txcut"/>
+	</aop:config>
+	<!-- AOP -->
+	<!-- 切面对象 -->
+<!-- 	<bean id="myAOP" class="com.woniu.aop.MyAOP"></bean>
+	切入点对象
+	<bean id="userDAO" class="com.woniu.aop.UserDAOImpl"></bean>
+	代理进行关联
+	<bean id="userDAOProxy" class="org.springframework.aop.framework.ProxyFactoryBean">
+		<property name="proxyInterfaces" value="com.woniu.aop.IUserDAO"></property>
+		<property name="target" ref="userDAO"></property>
+		<property name="interceptorNames" value="myAOP"></property>
+		<property name="proxyTargetClass" value="false"></property>
+	</bean> -->
+	<!-- <bean id="userDAO" class="com.woniu.aop.UserDAOImpl"></bean>
+	<bean id="deptDAO" class="com.woniu.aop.DeptDAO"></bean>
+	Aspect
+	<bean id="myAspect" class="com.woniu.aspects.MyAspect"></bean>
+	<aop:config>
+		<aop:aspect ref="myAspect">
+			<aop:pointcut expression="execution(* com.woniu.aop.*.* (..))" id="mycut"/>
+			<aop:before method="before1" pointcut-ref="mycut"/>
+			<aop:around method="around1" pointcut-ref="mycut"/>
+		</aop:aspect>
+	</aop:config> -->
+	
+	<!-- <context:component-scan base-package="com.woniu"></context:component-scan>
+	<aop:aspectj-autoproxy></aop:aspectj-autoproxy> -->
+</beans>
